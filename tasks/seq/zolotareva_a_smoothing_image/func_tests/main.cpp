@@ -1,0 +1,156 @@
+// Copyright 2023 Nesterov Alexander
+#include <gtest/gtest.h>
+
+#include <iostream>
+#include <random>
+#include <vector>
+
+#include "seq/zolotareva_a_smoothing_image/include/ops_seq.hpp"
+
+using namespace std;
+
+std::vector<uint8_t> generateRandomImage(int height, int width, uint8_t min_value = 0, uint8_t max_value = 255) {
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> dis(min_value, max_value);
+
+  std::vector<uint8_t> image(height * width);
+
+  for (int i = 0; i < height; i++) {
+    image[i] = dis(gen);
+  }
+
+  return image;
+}
+
+TEST(zolotareva_a_smoothing_image_seq, Test_Image_1) {
+  unsigned short int width = 3;
+  unsigned short int height = 3;
+  std::vector<uint8_t> inputImage = {100, 100, 100, 100, 0, 100, 100, 100, 100};  // generateRandomImage(height, width);
+  std::vector<uint8_t> outputImage(width * height);
+
+  std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
+  taskDataSeq->inputs.push_back(inputImage.data());
+  taskDataSeq->inputs_count.push_back(width);   // кол-во строк/высота
+  taskDataSeq->inputs_count.push_back(height);  // кол-во столбцов/ширина
+  taskDataSeq->outputs.push_back(outputImage.data());
+  taskDataSeq->outputs_count.push_back(outputImage.size());
+
+  zolotareva_a_smoothing_image_seq::TestTaskSequential task(taskDataSeq);
+  ASSERT_EQ(task.validation(), true);
+  task.pre_processing();
+  task.run();
+  task.post_processing();
+  ASSERT_EQ(outputImage[width + 1], 80);
+}
+
+TEST(zolotareva_a_smoothing_image_seq, BasicSmoothing) {
+  unsigned short int width = 3;
+  unsigned short int height = 3;
+  std::vector<uint8_t> inputImage = {100, 100, 100, 100, 0, 100, 100, 100, 100};
+  std::vector<uint8_t> outputImage(width * height);
+
+  std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
+  taskDataSeq->inputs.push_back(inputImage.data());
+  taskDataSeq->inputs_count.push_back(width);   // кол-во строк/высота
+  taskDataSeq->inputs_count.push_back(height);  // кол-во столбцов/ширина
+  taskDataSeq->outputs.push_back(outputImage.data());
+  taskDataSeq->outputs_count.push_back(outputImage.size());
+
+  zolotareva_a_smoothing_image_seq::TestTaskSequential task(taskDataSeq);
+  ASSERT_EQ(task.validation(), true);
+  task.pre_processing();
+  task.run();
+  task.post_processing();
+  EXPECT_EQ(outputImage[width + 1], 80);
+}
+
+TEST(zolotareva_a_smoothing_image_seq, OnePixelImage) {
+  unsigned short int width = 1;
+  std::vector<uint8_t> inputImage = {255};
+  std::vector<uint8_t> outputImage(width * width);
+
+  std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
+  taskDataSeq->inputs.push_back(inputImage.data());
+  taskDataSeq->inputs_count.push_back(width);  // кол-во строк/высота
+  taskDataSeq->inputs_count.push_back(width);  // кол-во столбцов/ширина
+  taskDataSeq->outputs.push_back(outputImage.data());
+  taskDataSeq->outputs_count.push_back(outputImage.size());
+
+  zolotareva_a_smoothing_image_seq::TestTaskSequential task(taskDataSeq);
+  ASSERT_EQ(task.validation(), true);
+  task.pre_processing();
+  task.run();
+  task.post_processing();
+  EXPECT_EQ(outputImage[0], 255);
+}
+
+TEST(zolotareva_a_smoothing_image_seq, OneRowImage) {
+  int width = 5;
+  int height = 1;
+  std::vector<uint8_t> inputImage = {0, 0, 255, 0, 0};
+  std::vector<uint8_t> outputImage(width * height);
+
+  std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
+  taskDataSeq->inputs.push_back(inputImage.data());
+  taskDataSeq->inputs_count.push_back(height);  // кол-во строк/высота
+  taskDataSeq->inputs_count.push_back(width);   // кол-во столбцов/ширина
+  taskDataSeq->outputs.push_back(outputImage.data());
+  taskDataSeq->outputs_count.push_back(outputImage.size());
+
+  zolotareva_a_smoothing_image_seq::TestTaskSequential task(taskDataSeq);
+  ASSERT_EQ(task.validation(), true);
+  task.pre_processing();
+  task.run();
+  task.post_processing();
+  EXPECT_EQ(outputImage[2], 115);
+}
+
+TEST(zolotareva_a_smoothing_image_seq, InvalidInputSizes) {
+  unsigned short int width = 5;
+  unsigned short int height = 0;
+  std::vector<uint8_t> inputImage(0);
+  std::vector<uint8_t> outputImage(width * height);
+
+  std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
+  taskDataSeq->inputs.push_back(inputImage.data());
+  taskDataSeq->inputs_count.push_back(width);   // кол-во строк/высота
+  taskDataSeq->inputs_count.push_back(height);  // кол-во столбцов/ширина
+  taskDataSeq->outputs.push_back(outputImage.data());
+  taskDataSeq->outputs_count.push_back(outputImage.size());
+
+  zolotareva_a_smoothing_image_seq::TestTaskSequential task(taskDataSeq);
+  ASSERT_EQ(task.validation(), false);
+}
+
+TEST(zolotareva_a_smoothing_image_seq, KernelCreation) {
+  int radius = 1;
+  int sigma = 1.0f;
+  std::vector<float> kernel =
+      zolotareva_a_smoothing_image_seq::TestTaskSequential::create_gaussian_kernel(radius, sigma);
+
+  EXPECT_EQ(kernel.size(), 3);
+  float sum = 0.0f;
+  for (float val : kernel) {
+    sum += val;
+  }
+  EXPECT_NEAR(sum, 1.0f, 1e-6);
+}
+
+TEST(zolotareva_a_smoothing_image_seq, ConvolutionCorrectness) {
+  unsigned short int width = 3;
+  unsigned short int height = 1;
+  std::vector<uint8_t> inputImage = {0, 255, 0};
+  std::vector<float> temp(width * height);
+  std::vector<float> kernel = {0.25f, 0.5f, 0.25f};
+
+  zolotareva_a_smoothing_image_seq::TestTaskSequential::convolve_rows(inputImage, height, width, kernel, temp);
+
+  float fin_sum_0 = 0.25f * 0 + 0.5f * 0 + 0.25f * 255;
+  float fin_sum_1 = 0.25f * 0 + 0.5f * 255 + 0.25f * 0;
+  float fin_sum_2 = 0.25f * 255 + 0.5f * 0 + 0.25f * 0;
+
+  EXPECT_NEAR(temp[0], fin_sum_0, 1e-6);
+  EXPECT_NEAR(temp[1], fin_sum_1, 1e-6);
+  EXPECT_NEAR(temp[2], fin_sum_2, 1e-6);
+}
