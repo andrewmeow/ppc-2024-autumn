@@ -13,9 +13,10 @@ std::vector<uint8_t> generateRandomImage(int height, int width, uint8_t min_valu
   std::mt19937 gen(rd());
   std::uniform_int_distribution<> dis(min_value, max_value);
 
-  std::vector<uint8_t> image(height * width);
+  int size = height * width;
+  std::vector<uint8_t> image(size);
 
-  for (int i = 0; i < height * width; i++) {
+  for (int i = 0; i < size; ++i) {
     image[i] = dis(gen);
   }
 
@@ -78,7 +79,7 @@ TEST(zolotareva_a_smoothing_image_mpi, Test_image) {
   int width = 3;
   std::vector<uint8_t> inputImage(width * height, 0);  // generateRandomImage(height, width);
   std::vector<uint8_t> mpi_outputImage(width * height);
-  
+
   std::shared_ptr<ppc::core::TaskData> taskDataPar = std::make_shared<ppc::core::TaskData>();
   if (world.rank() == 0) {
     taskDataPar->inputs.emplace_back(inputImage.data());
@@ -92,17 +93,11 @@ TEST(zolotareva_a_smoothing_image_mpi, Test_image) {
   try {
     ASSERT_EQ(testMpiTaskParallel.validation(), true);
     world.barrier();
-    std::cerr << " Starting pre_processing Rank " << world.rank() << std::endl;
     testMpiTaskParallel.pre_processing();
-    std::cerr << "Finished pre_processing Rank " << world.rank() << std::endl;
     world.barrier();
-    std::cerr << "Starting run Rank " << world.rank()  << std::endl;
     testMpiTaskParallel.run();
-    std::cerr << "Finished run Rank " << world.rank()  << std::endl;
     world.barrier();
-    std::cerr << "Starting post_processing Rank " << world.rank() << std::endl;
     testMpiTaskParallel.post_processing();
-    std::cerr << "Finished post_processing Rank " << world.rank() << std::endl;
     world.barrier();
     std::cerr << "completed on rank: " << world.rank() << std::endl;
   } catch (std::exception& e) {
@@ -123,9 +118,7 @@ TEST(zolotareva_a_smoothing_image_mpi, Test_image) {
     testMpiTaskSequential.run();
     testMpiTaskSequential.post_processing();
     ASSERT_EQ(seq_mpi_outputImage, mpi_outputImage);
-    std::cerr << "127 completed on rank: " << world.rank() << std::endl;
   }
-  std::cerr << "129 completed on rank: " << world.rank() << std::endl;
 }
 //TEST(zolotareva_a_smoothing_image_mpi, Test_image_random) { form(5, 5); }
 //TEST(zolotareva_a_smoothing_image_mpi, Test_image_random2) { form(10, 10); }

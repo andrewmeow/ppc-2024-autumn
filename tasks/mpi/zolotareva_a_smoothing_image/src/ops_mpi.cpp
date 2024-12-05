@@ -37,7 +37,7 @@ void zolotareva_a_smoothing_image_mpi::TestMPITaskSequential::convolve_rows(cons
         int pixel_x = std::clamp(x + k, 0, width - 1);
         sum += input[y * width + pixel_x] * kernel[k + kernel_radius];
       }
-      temp[y * width + x] = sum;
+      temp[y * width + x] = int(sum);
     }
   }
 }
@@ -54,7 +54,7 @@ void zolotareva_a_smoothing_image_mpi::TestMPITaskSequential::convolve_columns(c
         int pixel_y = std::clamp(y + k, 0, height - 1);
         sum += temp[pixel_y * width + x] * kernel[k + kernel_radius];
       }
-      output[y * width + x] = static_cast<uint8_t>(std::clamp(static_cast<int>(std::round(sum)), 0, 255));
+      output[y * width + x] = static_cast<uint8_t>(std::clamp(static_cast<int>(std::round(int(sum))), 0, 255));
       ;
     }
   }
@@ -131,7 +131,7 @@ bool zolotareva_a_smoothing_image_mpi::TestMPITaskParallel::pre_processing() {
   }
   boost::mpi::broadcast(world, height_, 0);
   boost::mpi::broadcast(world, width_, 0);
-  local_height_ = height_ / world_size + (world.rank() == (world_size - 1) ? 1 : 2);
+
   if (world.rank() == 0) {
     int base_height = height_ / world_size;  // 1
     int remainder = height_ % world_size;    // 1
@@ -151,7 +151,12 @@ bool zolotareva_a_smoothing_image_mpi::TestMPITaskParallel::pre_processing() {
       }
     }
   } else {
+    if(world.rank()==world_size - 1)
+      local_height_ = height_ / world_size + 1;
+      else
+        local_height_ = height_ / world_size + 2;
     local_input_.resize(local_height_ * width_);
+    cout << world.rank() << ", local_height: " << local_height_ << endl;
     world.recv(0, 0, local_input_.data(), local_height_ * width_);
     /*for (int i = 0; i < local_input_.size(); i++) {
       cout << "proc[" << world.rank() << "] local_input_[" << i << "] = " << static_cast<int>(local_input_[i]) << endl;
@@ -160,7 +165,7 @@ bool zolotareva_a_smoothing_image_mpi::TestMPITaskParallel::pre_processing() {
   return true;
 }
 
-bool zolotareva_a_smoothing_image_mpi::TestMPITaskParallel::run() { //ядро только в 0-м
+bool zolotareva_a_smoothing_image_mpi::TestMPITaskParallel::run() {  // ядро только в 0-м
   internal_order_test();
   std::vector<uint8_t> local_res(local_height_ * width_);
   int radius = 1;
@@ -188,7 +193,12 @@ bool zolotareva_a_smoothing_image_mpi::TestMPITaskParallel::run() { //ядро �
     for (int proc = 1; proc < world.size(); ++proc) {
       std::vector<uint8_t> buffer((base_height + (proc == (world.size() - 1) ? 1 : 2)) * width_);
       world.recv(proc, 1, buffer);
-      std::copy(buffer.begin() + width_, buffer.end() - (proc == world.size() - 1 ? 0 : width_),
+      size_t res_end = std::distance(result_.begin(), result_.begin() + send_start + (proc - 1) * base_height * width_);
+      cout << "result_now_end: " << res_end << endl;
+      size_t index_begin = std::distance(buffer.begin(), buffer.begin() + width_);
+      size_t index_end = std::distance(buffer.begin(),buffer.end() - (proc == world.size() - 1 ? 0 : width_));
+      cout << "proc: " << proc << ", begin: " << index_begin << ", end: " << index_end << endl;
+      std::copy(buffer.begin() + width_, buffer.begin() + base_height * width_ + (proc == world.size() - 1 ? 0 : width_),
                 result_.begin() + send_start + (proc - 1) * base_height * width_);
       /*for (int i = width_; i < (proc == (world.size() - 1) ? buffer.size() : buffer.size() - width_); i++) {
         cout << "proc[" << proc << "] buffer[" << i << "]:" << static_cast<int>(buffer[i]) << endl;
