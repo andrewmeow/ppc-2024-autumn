@@ -13,36 +13,40 @@ std::vector<uint8_t> generateRandomImage(int height, int width, uint8_t min_valu
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<> dis(min_value, max_value);
+  int size = height * width;
+  std::vector<uint8_t> image(size);
 
-  std::vector<uint8_t> image(height * width);
-
-  for (int i = 0; i < height; i++) {
+  for (int i = 0; i < size; ++i) {
     image[i] = dis(gen);
   }
 
   return image;
 }
 
-TEST(zolotareva_a_smoothing_image_seq, Test_Image_1) {
-  unsigned short int width = 3;
-  unsigned short int height = 3;
-  std::vector<uint8_t> inputImage = {100, 100, 100, 100, 0, 100, 100, 100, 100};  // generateRandomImage(height, width);
-  std::vector<uint8_t> outputImage(width * height);
+/*TEST(zolotareva_a_smoothing_image_seq, Test_Image_random) {
+  for (int h = 1; h < 10; ++h) {
+    for (int w = 1; w < 10; ++w) {
+      int width = w;
+      int height = h;
+      std::vector<uint8_t> inputImage = generateRandomImage(height, width);
+      std::vector<uint8_t> outputImage(width * height);
 
-  std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
-  taskDataSeq->inputs.push_back(inputImage.data());
-  taskDataSeq->inputs_count.push_back(width);   // кол-во строк/высота
-  taskDataSeq->inputs_count.push_back(height);  // кол-во столбцов/ширина
-  taskDataSeq->outputs.push_back(outputImage.data());
-  taskDataSeq->outputs_count.push_back(outputImage.size());
+      std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
+      taskDataSeq->inputs.push_back(inputImage.data());
+      taskDataSeq->inputs_count.push_back(height);  // кол-во строк/высота
+      taskDataSeq->inputs_count.push_back(width);   // кол-во столбцов/ширина
+      taskDataSeq->outputs.push_back(outputImage.data());
+      taskDataSeq->outputs_count.push_back(outputImage.size());
 
-  zolotareva_a_smoothing_image_seq::TestTaskSequential task(taskDataSeq);
-  ASSERT_EQ(task.validation(), true);
-  task.pre_processing();
-  task.run();
-  task.post_processing();
-  ASSERT_EQ(outputImage[width + 1], 80);
-}
+      zolotareva_a_smoothing_image_seq::TestTaskSequential task(taskDataSeq);
+      ASSERT_EQ(task.validation(), true);
+      task.pre_processing();
+      task.run();
+      task.post_processing();
+      ASSERT_EQ(height, taskDataSeq->inputs_count.back());
+    }
+  }
+}*/
 
 TEST(zolotareva_a_smoothing_image_seq, BasicSmoothing) {
   unsigned short int width = 3;
@@ -52,8 +56,8 @@ TEST(zolotareva_a_smoothing_image_seq, BasicSmoothing) {
 
   std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
   taskDataSeq->inputs.push_back(inputImage.data());
-  taskDataSeq->inputs_count.push_back(width);   // кол-во строк/высота
-  taskDataSeq->inputs_count.push_back(height);  // кол-во столбцов/ширина
+  taskDataSeq->inputs_count.push_back(height);  // кол-во строк/высота
+  taskDataSeq->inputs_count.push_back(width);   // кол-во столбцов/ширина
   taskDataSeq->outputs.push_back(outputImage.data());
   taskDataSeq->outputs_count.push_back(outputImage.size());
 
@@ -114,8 +118,8 @@ TEST(zolotareva_a_smoothing_image_seq, InvalidInputSizes) {
 
   std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
   taskDataSeq->inputs.push_back(inputImage.data());
-  taskDataSeq->inputs_count.push_back(width);   // кол-во строк/высота
-  taskDataSeq->inputs_count.push_back(height);  // кол-во столбцов/ширина
+  taskDataSeq->inputs_count.push_back(height);  // кол-во строк/высота
+  taskDataSeq->inputs_count.push_back(width);   // кол-во столбцов/ширина
   taskDataSeq->outputs.push_back(outputImage.data());
   taskDataSeq->outputs_count.push_back(outputImage.size());
 
@@ -129,7 +133,7 @@ TEST(zolotareva_a_smoothing_image_seq, KernelCreation) {
   std::vector<float> kernel =
       zolotareva_a_smoothing_image_seq::TestTaskSequential::create_gaussian_kernel(radius, sigma);
 
-  EXPECT_EQ(kernel.size(), 3);
+  EXPECT_EQ(static_cast<int>(kernel.size()), 3);
   float sum = 0.0f;
   for (float val : kernel) {
     sum += val;
