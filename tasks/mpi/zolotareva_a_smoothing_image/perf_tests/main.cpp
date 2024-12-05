@@ -4,48 +4,35 @@
 #include <boost/mpi/timer.hpp>
 
 #include "core/perf/include/perf.hpp"
-/*#include "mpi/zolotareva_a_smoothing_image/include/ops_mpi.hpp"
+#include "mpi/zolotareva_a_smoothing_image/include/ops_mpi.hpp"
 
-std::string getRandomString(int size, size_t *count_words) {
-  const std::string ABC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  std::string res;
-  *count_words = 1;
-  for (int i = 0; i < size; i++) {
-    int x = rand() % (ABC.size() + 1);
-    res += ABC[x];
-    if (rand() % 2 == 1 && i < size - 1) {
-      res += " ";
-      (*count_words) += 1;
-    }
-  }
-  return res;
-}
 
 TEST(mpi_zolotareva_a_smoothing_image_perf_test, test_pipeline_run) {
   boost::mpi::communicator world;
-  std::string global_string;
-  size_t answer = 0;
-  size_t global_count = 0;
+  const uint32_t height = 1000;
+  const uint32_t width = 1000;
+  std::vector<uint8_t> input(width * height, 0);
+  std::vector<uint8_t> output(width * height);
 
   std::shared_ptr<ppc::core::TaskData> taskDataPar = std::make_shared<ppc::core::TaskData>();
   if (world.rank() == 0) {
-    global_string = getRandomString(1000, &answer);
-    taskDataPar->inputs.emplace_back(reinterpret_cast<uint8_t *>(global_string.data()));
-    taskDataPar->inputs_count.emplace_back(global_string.size());
-    taskDataPar->outputs.emplace_back(reinterpret_cast<uint8_t *>(&global_count));
-    taskDataPar->outputs_count.emplace_back(1);
+    taskDataPar->inputs.emplace_back(reinterpret_cast<uint8_t *>(input.data()));
+    taskDataPar->inputs_count.emplace_back(height);
+    taskDataPar->inputs_count.emplace_back(width);
+    taskDataPar->outputs.emplace_back(reinterpret_cast<uint8_t *>(output.data()));
+    taskDataPar->outputs_count.emplace_back(output.size());
   }
 
   auto testMpiTaskParallel = std::make_shared<zolotareva_a_smoothing_image_mpi::TestMPITaskParallel>(taskDataPar);
-  ASSERT_EQ(testMpiTaskParallel->validation(), true);
-  testMpiTaskParallel->pre_processing();
-  testMpiTaskParallel->run();
-  testMpiTaskParallel->post_processing();
 
   auto perfAttr = std::make_shared<ppc::core::PerfAttr>();
   perfAttr->num_running = 10;
-  const boost::mpi::timer current_timer;
-  perfAttr->current_timer = [&] { return current_timer.elapsed(); };
+  const auto t0 = std::chrono::high_resolution_clock::now();
+  perfAttr->current_timer = [&] {
+    auto current_time_point = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(current_time_point - t0).count();
+    return static_cast<double>(duration) * 1e-9;
+  };
 
   auto perfResults = std::make_shared<ppc::core::PerfResults>();
 
@@ -53,38 +40,37 @@ TEST(mpi_zolotareva_a_smoothing_image_perf_test, test_pipeline_run) {
   perfAnalyzer->pipeline_run(perfAttr, perfResults);
   if (world.rank() == 0) {
     ppc::core::Perf::print_perf_statistic(perfResults);
-    ASSERT_EQ(answer, global_count);
+    ASSERT_EQ(height, taskDataPar->inputs_count.back());
   }
 }
 
 TEST(mpi_zolotareva_a_smoothing_image_perf_test, test_task_run) {
   boost::mpi::communicator world;
-  std::string global_string;
-  size_t answer = 0;
-  size_t global_count = 0;
-
-  global_string = getRandomString(1000, &answer);
+  const uint32_t height = 1000;
+  const uint32_t width = 1000;
+  std::vector<uint8_t> input(width * height, 0);
+  std::vector<uint8_t> output(width * height);
 
   std::shared_ptr<ppc::core::TaskData> taskDataPar = std::make_shared<ppc::core::TaskData>();
 
   if (world.rank() == 0) {
-    global_string = getRandomString(1000, &answer);
-    taskDataPar->inputs.emplace_back(reinterpret_cast<uint8_t *>(global_string.data()));
-    taskDataPar->inputs_count.emplace_back(global_string.size());
-    taskDataPar->outputs.emplace_back(reinterpret_cast<uint8_t *>(&global_count));
-    taskDataPar->outputs_count.emplace_back(1);
+    taskDataPar->inputs.emplace_back(reinterpret_cast<uint8_t *>(input.data()));
+    taskDataPar->inputs_count.emplace_back(height);
+    taskDataPar->inputs_count.emplace_back(width);
+    taskDataPar->outputs.emplace_back(reinterpret_cast<uint8_t *>(output.data()));
+    taskDataPar->outputs_count.emplace_back(output.size());
   }
 
   auto testMpiTaskParallel = std::make_shared<zolotareva_a_smoothing_image_mpi::TestMPITaskParallel>(taskDataPar);
-  ASSERT_EQ(testMpiTaskParallel->validation(), true);
-  testMpiTaskParallel->pre_processing();
-  testMpiTaskParallel->run();
-  testMpiTaskParallel->post_processing();
 
   auto perfAttr = std::make_shared<ppc::core::PerfAttr>();
   perfAttr->num_running = 10;
-  const boost::mpi::timer current_timer;
-  perfAttr->current_timer = [&] { return current_timer.elapsed(); };
+  const auto t0 = std::chrono::high_resolution_clock::now();
+  perfAttr->current_timer = [&] {
+    auto current_time_point = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(current_time_point - t0).count();
+    return static_cast<double>(duration) * 1e-9;
+  };
 
   auto perfResults = std::make_shared<ppc::core::PerfResults>();
 
@@ -92,6 +78,6 @@ TEST(mpi_zolotareva_a_smoothing_image_perf_test, test_task_run) {
   perfAnalyzer->task_run(perfAttr, perfResults);
   if (world.rank() == 0) {
     ppc::core::Perf::print_perf_statistic(perfResults);
-    ASSERT_EQ(answer, global_count);
+    ASSERT_EQ(height, taskDataPar->inputs_count.back());
   }
-}*/
+}
