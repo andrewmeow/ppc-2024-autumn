@@ -120,5 +120,5 @@ TEST(zolotareva_a_smoothing_image_mpi, Test_image) {
     ASSERT_EQ(seq_mpi_outputImage, mpi_outputImage);
   }
 }
-//TEST(zolotareva_a_smoothing_image_mpi, Test_image_random) { form(5, 5); }
-//TEST(zolotareva_a_smoothing_image_mpi, Test_image_random2) { form(10, 10); }
+TEST(zolotareva_a_smoothing_image_mpi, Test_image_random) { form(5, 5); }
+TEST(zolotareva_a_smoothing_image_mpi, Test_image_random2) { form(10, 10); }
