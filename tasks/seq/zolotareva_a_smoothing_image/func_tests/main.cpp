@@ -23,31 +23,31 @@ std::vector<uint8_t> generateRandomImage(int height, int width, uint8_t min_valu
   return image;
 }
 
-/*TEST(zolotareva_a_smoothing_image_seq, Test_Image_random) {
-  for (int h = 1; h < 10; ++h) {
-    for (int w = 1; w < 10; ++w) {
-      int width = w;
-      int height = h;
-      std::vector<uint8_t> inputImage = generateRandomImage(height, width);
-      std::vector<uint8_t> outputImage(width * height);
+void form(int h, int w) {
+  unsigned int width = w;
+  unsigned int height = h;
+  std::vector<uint8_t> inputImage = generateRandomImage(height, width);
+  std::vector<uint8_t> outputImage(width * height);
 
-      std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
-      taskDataSeq->inputs.push_back(inputImage.data());
-      taskDataSeq->inputs_count.push_back(height);  // кол-во строк/высота
-      taskDataSeq->inputs_count.push_back(width);   // кол-во столбцов/ширина
-      taskDataSeq->outputs.push_back(outputImage.data());
-      taskDataSeq->outputs_count.push_back(outputImage.size());
+  std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
+  taskDataSeq->inputs.push_back(inputImage.data());
+  taskDataSeq->inputs_count.push_back(height);
+  taskDataSeq->inputs_count.push_back(width);
+  taskDataSeq->outputs.push_back(outputImage.data());
+  taskDataSeq->outputs_count.push_back(outputImage.size());
 
-      zolotareva_a_smoothing_image_seq::TestTaskSequential task(taskDataSeq);
-      ASSERT_EQ(task.validation(), true);
-      task.pre_processing();
-      task.run();
-      task.post_processing();
-      ASSERT_EQ(height, taskDataSeq->inputs_count.back());
-    }
-  }
-}*/
-
+  zolotareva_a_smoothing_image_seq::TestTaskSequential task(taskDataSeq);
+  ASSERT_EQ(task.validation(), true);
+  task.pre_processing();
+  task.run();
+  task.post_processing();
+  ASSERT_EQ(height, taskDataSeq->inputs_count[0]);
+}
+TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_1_1) { form(1, 1); };
+TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_3_3) { form(3, 3); };
+TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_59_26) { form(59, 26); };
+TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_25_50) { form(25, 59); };
+TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_100_100) { form(100, 100); };
 TEST(zolotareva_a_smoothing_image_seq, BasicSmoothing) {
   unsigned short int width = 3;
   unsigned short int height = 3;
@@ -56,8 +56,8 @@ TEST(zolotareva_a_smoothing_image_seq, BasicSmoothing) {
 
   std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
   taskDataSeq->inputs.push_back(inputImage.data());
-  taskDataSeq->inputs_count.push_back(height);  // кол-во строк/высота
-  taskDataSeq->inputs_count.push_back(width);   // кол-во столбцов/ширина
+  taskDataSeq->inputs_count.push_back(height);
+  taskDataSeq->inputs_count.push_back(width);
   taskDataSeq->outputs.push_back(outputImage.data());
   taskDataSeq->outputs_count.push_back(outputImage.size());
 
@@ -76,8 +76,8 @@ TEST(zolotareva_a_smoothing_image_seq, OnePixelImage) {
 
   std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
   taskDataSeq->inputs.push_back(inputImage.data());
-  taskDataSeq->inputs_count.push_back(width);  // кол-во строк/высота
-  taskDataSeq->inputs_count.push_back(width);  // кол-во столбцов/ширина
+  taskDataSeq->inputs_count.push_back(width);
+  taskDataSeq->inputs_count.push_back(width);
   taskDataSeq->outputs.push_back(outputImage.data());
   taskDataSeq->outputs_count.push_back(outputImage.size());
 
@@ -97,8 +97,8 @@ TEST(zolotareva_a_smoothing_image_seq, OneRowImage) {
 
   std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
   taskDataSeq->inputs.push_back(inputImage.data());
-  taskDataSeq->inputs_count.push_back(height);  // кол-во строк/высота
-  taskDataSeq->inputs_count.push_back(width);   // кол-во столбцов/ширина
+  taskDataSeq->inputs_count.push_back(height);
+  taskDataSeq->inputs_count.push_back(width);
   taskDataSeq->outputs.push_back(outputImage.data());
   taskDataSeq->outputs_count.push_back(outputImage.size());
 
@@ -118,8 +118,8 @@ TEST(zolotareva_a_smoothing_image_seq, InvalidInputSizes) {
 
   std::shared_ptr<ppc::core::TaskData> taskDataSeq = std::make_shared<ppc::core::TaskData>();
   taskDataSeq->inputs.push_back(inputImage.data());
-  taskDataSeq->inputs_count.push_back(height);  // кол-во строк/высота
-  taskDataSeq->inputs_count.push_back(width);   // кол-во столбцов/ширина
+  taskDataSeq->inputs_count.push_back(height);
+  taskDataSeq->inputs_count.push_back(width);
   taskDataSeq->outputs.push_back(outputImage.data());
   taskDataSeq->outputs_count.push_back(outputImage.size());
 
@@ -133,7 +133,7 @@ TEST(zolotareva_a_smoothing_image_seq, KernelCreation) {
   std::vector<float> kernel =
       zolotareva_a_smoothing_image_seq::TestTaskSequential::create_gaussian_kernel(radius, sigma);
 
-  EXPECT_EQ(static_cast<int>(kernel.size()), 3);
+  ASSERT_EQ(kernel.size(), size_t(3));
   float sum = 0.0f;
   for (float val : kernel) {
     sum += val;

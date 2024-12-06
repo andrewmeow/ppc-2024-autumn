@@ -65,7 +65,9 @@ std::vector<float> zolotareva_a_smoothing_image_seq::TestTaskSequential::create_
   }
   return kernel;
 }
-void zolotareva_a_smoothing_image_seq::TestTaskSequential::convolve_rows(const std::vector<uint8_t>& input, int height,int width, const std::vector<float>& kernel,std::vector<float>& temp) {
+void zolotareva_a_smoothing_image_seq::TestTaskSequential::convolve_rows(const std::vector<uint8_t>& input, int height,
+                                                                         int width, const std::vector<float>& kernel,
+                                                                         std::vector<float>& temp) {
   int kernel_radius = kernel.size() / 2;
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
@@ -78,7 +80,9 @@ void zolotareva_a_smoothing_image_seq::TestTaskSequential::convolve_rows(const s
     }
   }
 }
-void zolotareva_a_smoothing_image_seq::TestTaskSequential::convolve_columns(const std::vector<float>& temp, int height,int width, const std::vector<float>& kernel,std::vector<uint8_t>& output) {
+void zolotareva_a_smoothing_image_seq::TestTaskSequential::convolve_columns(const std::vector<float>& temp, int height,
+                                                                            int width, const std::vector<float>& kernel,
+                                                                            std::vector<uint8_t>& output) {
   int kernel_radius = kernel.size() / 2;
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
