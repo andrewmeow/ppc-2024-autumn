@@ -31,6 +31,12 @@ void form(int height, int width) {
   std::shared_ptr<ppc::core::TaskData> taskDataPar = std::make_shared<ppc::core::TaskData>();
   if (world.rank() == 0) {
     inputImage = generateRandomImage(height, width);
+    for (int i = 0; i < height; ++i) {
+      for (int j = 0; j < width; ++j) {
+        cout << "inputImage[" << i * width + j << "] = " << static_cast<int>(inputImage[i * width + j]) << ' ';
+      }
+      cout << endl;
+    }
     taskDataPar->inputs.emplace_back(inputImage.data());
     taskDataPar->inputs_count.emplace_back(height);  // кол-во строк/высота
     taskDataPar->inputs_count.emplace_back(width);   // кол-во столбцов/ширина
@@ -40,18 +46,17 @@ void form(int height, int width) {
 
   zolotareva_a_smoothing_image_mpi::TestMPITaskParallel testMpiTaskParallel(taskDataPar);
   world.barrier();
-  try{
-  ASSERT_EQ(testMpiTaskParallel.validation(), true);
-  world.barrier();
-  testMpiTaskParallel.pre_processing();
-  world.barrier();
-  testMpiTaskParallel.run();
-  world.barrier();
-  testMpiTaskParallel.post_processing();
-  world.barrier();
-  std::cerr << "completed on rank: " << world.rank() << std::endl;
-  } catch(std::exception& e)
-  {
+  try {
+    ASSERT_EQ(testMpiTaskParallel.validation(), true);
+    world.barrier();
+    testMpiTaskParallel.pre_processing();
+    world.barrier();
+    testMpiTaskParallel.run();
+    world.barrier();
+    testMpiTaskParallel.post_processing();
+    world.barrier();
+    std::cerr << "completed on rank: " << world.rank() << std::endl;
+  } catch (std::exception& e) {
     std::cerr << "Exception during scatterv on rank: " << world.rank() << " - " << e.what() << std::endl;
   }
 
@@ -120,5 +125,7 @@ TEST(zolotareva_a_smoothing_image_mpi, Test_image) {
     ASSERT_EQ(seq_mpi_outputImage, mpi_outputImage);
   }
 }
-TEST(zolotareva_a_smoothing_image_mpi, Test_image_random) { form(5, 5); }
-TEST(zolotareva_a_smoothing_image_mpi, Test_image_random2) { form(10, 10); }
+TEST(zolotareva_a_smoothing_image_mpi, Test_image_random) { form(4, 4); }
+TEST(zolotareva_a_smoothing_image_mpi, Test_image_random2) { form(5, 5); }
+TEST(zolotareva_a_smoothing_image_mpi, Test_image_random3) { form(5, 6); }
+TEST(zolotareva_a_smoothing_image_mpi, Test_image_random4) { form(6, 5); }

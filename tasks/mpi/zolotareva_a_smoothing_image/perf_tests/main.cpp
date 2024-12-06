@@ -6,7 +6,6 @@
 #include "core/perf/include/perf.hpp"
 #include "mpi/zolotareva_a_smoothing_image/include/ops_mpi.hpp"
 
-
 TEST(mpi_zolotareva_a_smoothing_image_perf_test, test_pipeline_run) {
   boost::mpi::communicator world;
   const uint32_t height = 1000;

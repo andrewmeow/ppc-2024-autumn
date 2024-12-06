@@ -133,15 +133,15 @@ bool zolotareva_a_smoothing_image_mpi::TestMPITaskParallel::pre_processing() {
   boost::mpi::broadcast(world, width_, 0);
 
   if (world.rank() == 0) {
-    int base_height = height_ / world_size;  // 1
-    int remainder = height_ % world_size;    // 1
+    int base_height = height_ / world_size;
+    int remainder = height_ % world_size;
     cout << "base_height: " << base_height << ", remainder: " << remainder << endl;
-    int send_start = (base_height + remainder) * width_;  // 6
+    int send_start = (base_height + remainder - 1) * width_;
     for (int proc = 1; proc < world_size - 1; proc++) {
-      world.send(proc, 0, input_.data() + proc * send_start - proc * width_, local_height_ * width_);
+      world.send(proc, 0, input_.data() + send_start, (base_height + 2) * width_);
+      send_start += base_height * width_;
     }
-    world.send(world_size - 1, 0, input_.data() + (world_size - 1) * send_start - (world_size - 1) * width_,
-               base_height * width_ + width_);
+    world.send(world_size - 1, 0, input_.data() + send_start, base_height * width_ + width_);
 
     local_height_ = base_height + remainder + 1;
     local_input_.resize(local_height_);
@@ -151,21 +151,21 @@ bool zolotareva_a_smoothing_image_mpi::TestMPITaskParallel::pre_processing() {
       }
     }
   } else {
-    if(world.rank()==world_size - 1)
+    if (world.rank() == world_size - 1)
       local_height_ = height_ / world_size + 1;
-      else
-        local_height_ = height_ / world_size + 2;
+    else
+      local_height_ = height_ / world_size + 2;
     local_input_.resize(local_height_ * width_);
     cout << world.rank() << ", local_height: " << local_height_ << endl;
     world.recv(0, 0, local_input_.data(), local_height_ * width_);
-    /*for (int i = 0; i < local_input_.size(); i++) {
+    for (int i = 0; i < local_input_.size(); i++) {
       cout << "proc[" << world.rank() << "] local_input_[" << i << "] = " << static_cast<int>(local_input_[i]) << endl;
-    }*/
+    }
   }
   return true;
 }
 
-bool zolotareva_a_smoothing_image_mpi::TestMPITaskParallel::run() {  // ядро только в 0-м
+bool zolotareva_a_smoothing_image_mpi::TestMPITaskParallel::run() {
   internal_order_test();
   std::vector<uint8_t> local_res(local_height_ * width_);
   int radius = 1;
@@ -180,11 +180,10 @@ bool zolotareva_a_smoothing_image_mpi::TestMPITaskParallel::run() {  // ядро
 
   zolotareva_a_smoothing_image_mpi::TestMPITaskSequential::convolve_columns(temp, local_height_, width_,
                                                                             vertical_kernel, local_res);
-  /*for (int i = 0; i < local_height_ * width_; ++i) {
+  for (int i = 0; i < local_height_ * width_; ++i) {
     cout << "Proc #" << world.rank() << ": local_res[" << i << "] = " << static_cast<int>(local_res[i]) << endl;
-  }*/
+  }
   world.barrier();
-  //!!!!до сюда доходят все
   if (world.rank() == 0) {
     result_.clear();
     int base_height = height_ / world.size();
@@ -196,14 +195,10 @@ bool zolotareva_a_smoothing_image_mpi::TestMPITaskParallel::run() {  // ядро
       size_t res_end = std::distance(result_.begin(), result_.begin() + send_start + (proc - 1) * base_height * width_);
       cout << "result_now_end: " << res_end << endl;
       size_t index_begin = std::distance(buffer.begin(), buffer.begin() + width_);
-      size_t index_end = std::distance(buffer.begin(),buffer.end() - (proc == world.size() - 1 ? 0 : width_));
+      size_t index_end = std::distance(buffer.begin(), buffer.end() - (proc == world.size() - 1 ? 0 : width_));
       cout << "proc: " << proc << ", begin: " << index_begin << ", end: " << index_end << endl;
-      std::copy(buffer.begin() + width_, buffer.begin() + base_height * width_ + (proc == world.size() - 1 ? 0 : width_),
+      std::copy(buffer.begin() + width_, buffer.end() - (proc == world.size() - 1 ? 0 : width_),
                 result_.begin() + send_start + (proc - 1) * base_height * width_);
-      /*for (int i = width_; i < (proc == (world.size() - 1) ? buffer.size() : buffer.size() - width_); i++) {
-        cout << "proc[" << proc << "] buffer[" << i << "]:" << static_cast<int>(buffer[i]) << endl;
-        // result_.push_back(buffer[i]);
-      }*/
     }
   } else {
     world.send(0, 1, local_res);
