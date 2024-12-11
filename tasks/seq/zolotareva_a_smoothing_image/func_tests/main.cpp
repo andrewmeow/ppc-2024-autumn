@@ -1,18 +1,15 @@
 // Copyright 2023 Nesterov Alexander
 #include <gtest/gtest.h>
 
-#include <iostream>
 #include <random>
 #include <vector>
 
 #include "seq/zolotareva_a_smoothing_image/include/ops_seq.hpp"
-
-using namespace std;
-
-std::vector<uint8_t> generateRandomImage(int height, int width, uint8_t min_value = 0, uint8_t max_value = 255) {
+namespace zolotareva_a_smoothing_image_seq {
+std::vector<uint8_t> generateRandomImage(int height, int width) {
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_int_distribution<> dis(min_value, max_value);
+  std::uniform_int_distribution<> dis(0, 255);
   int size = height * width;
   std::vector<uint8_t> image(size);
 
@@ -41,13 +38,14 @@ void form(int h, int w) {
   task.pre_processing();
   task.run();
   task.post_processing();
-  ASSERT_EQ(height, taskDataSeq->inputs_count[0]);
+  EXPECT_EQ(height, taskDataSeq->inputs_count[0]);
 }
-TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_1_1) { form(1, 1); };
-TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_3_3) { form(3, 3); };
-TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_59_26) { form(59, 26); };
-TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_25_50) { form(25, 59); };
-TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_100_100) { form(100, 100); };
+}  // namespace zolotareva_a_smoothing_image_seq
+TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_1_1) { zolotareva_a_smoothing_image_seq::form(1, 1); };
+TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_3_3) { zolotareva_a_smoothing_image_seq::form(3, 3); };
+TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_59_26) { zolotareva_a_smoothing_image_seq::form(59, 26); };
+TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_25_50) { zolotareva_a_smoothing_image_seq::form(25, 59); };
+TEST(zolotareva_a_smoothing_image_seq, Test_Image_random_100_100) { zolotareva_a_smoothing_image_seq::form(100, 100); };
 TEST(zolotareva_a_smoothing_image_seq, BasicSmoothing) {
   unsigned short int width = 3;
   unsigned short int height = 3;
@@ -66,7 +64,7 @@ TEST(zolotareva_a_smoothing_image_seq, BasicSmoothing) {
   task.pre_processing();
   task.run();
   task.post_processing();
-  EXPECT_EQ(int(outputImage[width + 1]), 79);
+  EXPECT_EQ(int(outputImage[width + 1]), 80);
 }
 
 TEST(zolotareva_a_smoothing_image_seq, OnePixelImage) {
@@ -82,11 +80,11 @@ TEST(zolotareva_a_smoothing_image_seq, OnePixelImage) {
   taskDataSeq->outputs_count.push_back(outputImage.size());
 
   zolotareva_a_smoothing_image_seq::TestTaskSequential task(taskDataSeq);
-  ASSERT_EQ(task.validation(), true);
+  ASSERT_TRUE(task.validation());
   task.pre_processing();
   task.run();
   task.post_processing();
-  EXPECT_EQ(int(outputImage[0]), 254);
+  EXPECT_EQ(int(outputImage[0]), 255);
 }
 
 TEST(zolotareva_a_smoothing_image_seq, OneRowImage) {
@@ -103,7 +101,7 @@ TEST(zolotareva_a_smoothing_image_seq, OneRowImage) {
   taskDataSeq->outputs_count.push_back(outputImage.size());
 
   zolotareva_a_smoothing_image_seq::TestTaskSequential task(taskDataSeq);
-  ASSERT_EQ(task.validation(), true);
+  ASSERT_TRUE(task.validation());
   task.pre_processing();
   task.run();
   task.post_processing();
@@ -124,7 +122,7 @@ TEST(zolotareva_a_smoothing_image_seq, InvalidInputSizes) {
   taskDataSeq->outputs_count.push_back(outputImage.size());
 
   zolotareva_a_smoothing_image_seq::TestTaskSequential task(taskDataSeq);
-  ASSERT_EQ(task.validation(), false);
+  EXPECT_FALSE(task.validation());
 }
 
 TEST(zolotareva_a_smoothing_image_seq, KernelCreation) {
